@@ -16,17 +16,17 @@ test('CRUD operations', t => {
 
   let sessionId = crypto.randomBytes(24).toString('hex')
   let passwordHash = crypto.randomBytes(12).toString('hex')
-  let email = "testEmail_" + (Math.random() * 1000000) + "@test.com"
+  let phone = "testPhone_" + (Math.random() * 1000000) + "@test.com"
   let userId
   let commandId
 
-  t.test('Create email-password user', t => {
+  t.test('Create phone-password user', t => {
     t.plan(6)
 
-    testUtils.runCommand(t, r, 'emailPassword', {
-      type: 'EmailPasswordUserCreate',
+    testUtils.runCommand(t, r, 'phonePassword', {
+      type: 'PhonePasswordUserCreate',
       parameters: {
-        email: email,
+        phone: phone,
         passwordHash: passwordHash
       }
     }, (cId) => commandId = cId).then(
@@ -45,20 +45,20 @@ test('CRUD operations', t => {
       t.plan(2)
 
       setTimeout(() => {
-        testUtils.getGeneratedEvents(r, 'emailPassword', commandId,
-          (events) => t.equal(events.length, 1, "generated one event in emailPassword list"))
+        testUtils.getGeneratedEvents(r, 'phonePassword', commandId,
+          (events) => t.equal(events.length, 1, "generated one event in phonePassword list"))
 
         testUtils.getGeneratedEvents(r, 'users', commandId,
           (events) => t.equal(events.length, 2, "generated two events in users list"))
       }, 250)
     })
 
-    t.test('Check if there are emailPassword entry', t => {
+    t.test('Check if there are phonePassword entry', t => {
       t.plan(1)
-      r.table("emailPassword_EmailPassword").get(email).run(conn).then(
+      r.table("phonePassword_PhonePassword").get(phone).run(conn).then(
         row => {
-          if (row) t.pass("email found " + JSON.stringify(row))
-          else t.fail("email not found " + email)
+          if (row) t.pass("phone found " + JSON.stringify(row))
+          else t.fail("phone not found " + phone)
         }
       ).catch(
         error => t.fail("error " + error)
@@ -82,9 +82,9 @@ test('CRUD operations', t => {
       r.table("users_User").get(userId).run(conn).then(
         user => {
           t.equal(user.loginMethods.length, 1, "user has one login method")
-          t.equal(user.loginMethods[0].type, 'emailPassword', "login method type match")
-          t.equal(user.loginMethods[0].id, email, "login method id match")
-          t.equal(user.loginMethods[0].email, email, "login method extra data match")
+          t.equal(user.loginMethods[0].type, 'phonePassword', "login method type match")
+          t.equal(user.loginMethods[0].id, phone, "login method id match")
+          t.equal(user.loginMethods[0].phone, phone, "login method extra data match")
         }
       ).catch(
         error => t.fail("error " + error)
@@ -96,10 +96,10 @@ test('CRUD operations', t => {
   t.test('remove login method from user', t => {
     t.plan(3)
 
-    testUtils.runCommand(t, r, 'emailPassword', {
-      type: 'EmailPasswordDelete',
+    testUtils.runCommand(t, r, 'phonePassword', {
+      type: 'PhonePasswordDelete',
       parameters: {
-        emailPassword: email
+        phonePassword: phone
       }
     }, (cId) => {
     }).then(result => {
@@ -118,12 +118,12 @@ test('CRUD operations', t => {
       }, 100)
     })
 
-    t.test('Check if emailPassword entry are removed', t => {
+    t.test('Check if phonePassword entry are removed', t => {
       t.plan(1)
-      r.table("emailPassword_EmailPassword").get(email).run(conn).then(
+      r.table("phonePassword_PhonePassword").get(phone).run(conn).then(
         row => {
-          if (!row) t.pass("email not found")
-          else t.fail("email found " + JSON.stringify(row))
+          if (!row) t.pass("phone not found")
+          else t.fail("phone found " + JSON.stringify(row))
         }
       ).catch(
         error => t.fail("error " + error)
@@ -135,10 +135,10 @@ test('CRUD operations', t => {
   t.test('add login method to user', t => {
     t.plan(3)
 
-    testUtils.runCommand(t, r, 'emailPassword', {
-      type: 'EmailPasswordCreate',
+    testUtils.runCommand(t, r, 'phonePassword', {
+      type: 'PhonePasswordCreate',
       parameters: {
-        email,
+        phone,
         passwordHash,
         user: userId,
       }
@@ -146,13 +146,13 @@ test('CRUD operations', t => {
     }).then(result => {
     })
 
-    t.test('Check if there are emailPassword entry', t => {
+    t.test('Check if there are phonePassword entry', t => {
       t.plan(1)
       setTimeout(() => {
-        r.table("emailPassword_EmailPassword").get(email).run(conn).then(
+        r.table("phonePassword_PhonePassword").get(phone).run(conn).then(
           row => {
-            if (row) t.pass("email found " + JSON.stringify(row))
-            else t.fail("email not found " + email)
+            if (row) t.pass("phone found " + JSON.stringify(row))
+            else t.fail("phone not found " + phone)
           }
         ).catch(
           error => t.fail("error " + error)
@@ -165,9 +165,9 @@ test('CRUD operations', t => {
       r.table("users_User").get(userId).run(conn).then(
         user => {
           t.equal(user.loginMethods.length, 1, "user has one login method")
-          t.equal(user.loginMethods[0].type, 'emailPassword', "login method type match")
-          t.equal(user.loginMethods[0].id, email, "login method id match")
-          t.equal(user.loginMethods[0].email, email, "login method extra data match")
+          t.equal(user.loginMethods[0].type, 'phonePassword', "login method type match")
+          t.equal(user.loginMethods[0].id, phone, "login method id match")
+          t.equal(user.loginMethods[0].phone, phone, "login method extra data match")
         }
       ).catch(
         error => t.fail("error " + error)
@@ -180,10 +180,10 @@ test('CRUD operations', t => {
   t.test('change password', t => {
     t.plan(2)
 
-    testUtils.runCommand(t, r, 'emailPassword', {
-      type: 'EmailPasswordUpdate',
+    testUtils.runCommand(t, r, 'phonePassword', {
+      type: 'PhonePasswordUpdate',
       parameters: {
-        emailPassword: email,
+        phonePassword: phone,
         passwordHash: newPasswordHash
       }
     }, (cId) => {
@@ -193,7 +193,7 @@ test('CRUD operations', t => {
     t.test('Check if the password is changed', t => {
       t.plan(1)
       setTimeout(() => {
-        r.table("emailPassword_EmailPassword").get(email).run(conn).then(
+        r.table("phonePassword_PhonePassword").get(phone).run(conn).then(
           row => {
             t.equal(row.passwordHash, newPasswordHash, "password hash match")
           }
@@ -217,13 +217,13 @@ test('CRUD operations', t => {
     }).then(result => {
     })
 
-    t.test('Check if emailPassword entry are removed', t => {
+    t.test('Check if phonePassword entry are removed', t => {
       t.plan(1)
       setTimeout(() => {
-        r.table("emailPassword_EmailPassword").get(email).run(conn).then(
+        r.table("phonePassword_PhonePassword").get(phone).run(conn).then(
           row => {
-            if (!row) t.pass("email not found")
-            else t.fail("email found " + JSON.stringify(row))
+            if (!row) t.pass("phone not found")
+            else t.fail("phone found " + JSON.stringify(row))
           }
         ).catch(
           error => t.fail("error " + error)

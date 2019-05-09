@@ -1,1 +1,1 @@
-# email-password-service
+# phone-password-service

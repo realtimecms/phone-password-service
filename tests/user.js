@@ -7,7 +7,7 @@ const admin = {
   roles: ["admin"]
 }
 
-test('User operations - Register, login, logout, reset password, change email...', t => {
+test('User operations - Register, login, logout, reset password, change phone...', t => {
   t.plan(13)
 
   let conn
@@ -16,34 +16,33 @@ test('User operations - Register, login, logout, reset password, change email...
 
   let sessionId = crypto.randomBytes(24).toString('hex')
   let passwordHash = crypto.randomBytes(12).toString('hex')
-  let email = "testEmail_" + (Math.random() * 1000000) + "@test.com"
+  let phone = ""+(Math.random() * 1000000).toFixed()
   let firstName = crypto.randomBytes(12).toString('hex')
   let lastName = crypto.randomBytes(12).toString('hex')
-  let phoneNumber = crypto.randomBytes(12).toString('hex')
-  let userData = { firstName, lastName, phoneNumber }
+  let userData = { firstName, lastName }
   let userId
   let commandId
-  let registerKey
+  let registerCode
 
   t.test("Start sign-up", t => {
     t.plan(3)
 
-    testUtils.runCommand(t, r, 'emailPassword', {
+    testUtils.runCommand(t, r, 'phonePassword', {
       type: 'startRegister',
-      parameters: { email, passwordHash, userData }
+      parameters: { phone, passwordHash, userData }
     }, (cId) => { commandId = cId }).then(result => {})
 
     t.test('Check if there are events generated', t => {
       t.plan(4)
 
       setTimeout(() => {
-        testUtils.getGeneratedEvents(r, 'emailPassword', commandId,
+        testUtils.getGeneratedEvents(r, 'phonePassword', commandId,
           (events) => {
-            t.equal(events.length, 1, "generated one event in emailPassword list")
-            if (events[0].key) {
-              registerKey = events[0].key
-              t.pass('found key in event')
-            } else t.fail('key not found')
+            t.equal(events.length, 1, "generated one event in phonePassword list")
+            if (events[0].code && events[0].phone) {
+              registerCode = events[0].code
+              t.pass('found code and phone in event')
+            } else t.fail('code not found')
             if (events[0].user) {
               userId = events[0].user
               t.pass('found userId in event')
@@ -51,22 +50,22 @@ test('User operations - Register, login, logout, reset password, change email...
           }
         )
 
-        testUtils.getGeneratedEvents(r, 'email', commandId,
+        testUtils.getGeneratedEvents(r, 'sms', commandId,
           (events) => {
-            t.equal(events.length, 1, "generated email event in email list")
+            t.equal(events.length, 1, "generated sms event in sms list")
           }
         )
       }, 350)
     })
 
-    t.test('Check if there are registerKey', t => {
+    t.test('Check if there are registerCode', t => {
       t.plan(1)
       setTimeout(() => {
-        r.table('emailPassword_EmailKey').get(registerKey).run(conn).then(
+        r.table('phonePassword_PhoneCode').get(phone + "_" + registerCode).run(conn).then(
           row => {
-            if(row && row.email == email) {
-              t.pass("register key found")
-            } else t.fail("register key not found")
+            if(row && row.phone == phone && row.code == registerCode) {
+              t.pass("register code found")
+            } else t.fail("register code not found")
           }
         )
       }, 450)
@@ -74,49 +73,49 @@ test('User operations - Register, login, logout, reset password, change email...
 
   })
 
-  t.test("resend sign-up key", t => {
+  t.test("resend sign-up code", t => {
     t.plan(2)
 
-    testUtils.runCommand(t, r, 'emailPassword', {
-      type: 'resendRegisterKey',
-      parameters: { email }
+    testUtils.runCommand(t, r, 'phonePassword', {
+      type: 'resendRegisterCode',
+      parameters: { phone }
     }, (cId) => { commandId = cId }).then(result => {})
 
     setTimeout(()=>{
-      testUtils.getGeneratedEvents(r, 'email', commandId,
+      testUtils.getGeneratedEvents(r, 'sms', commandId,
         (events) => {
-          t.equal(events.length, 1, "generated email event in email list")
+          t.equal(events.length, 1, "generated sms event in sms list")
         }
       )
     }, 550)
   })
 
-  t.test("finish sign-up using email key", t => {
+  t.test("finish sign-up using phone code", t => {
     t.plan(5)
 
-    testUtils.runCommand(t, r, 'emailPassword', {
+    testUtils.runCommand(t, r, 'phonePassword', {
       type: 'finishRegister',
-      parameters: { key: registerKey }
+      parameters: { code: registerCode, phone: phone }
     }, (cId) => { commandId = cId }).then(result => {})
 
     t.test('Check if there are events generated', t => {
       t.plan(2)
 
       setTimeout(() => {
-        testUtils.getGeneratedEvents(r, 'emailPassword', commandId,
-          (events) => t.equal(events.length, 2, "generated two events in emailPassword list"))
+        testUtils.getGeneratedEvents(r, 'phonePassword', commandId,
+          (events) => t.equal(events.length, 2, "generated two events in phonePassword list"))
 
         testUtils.getGeneratedEvents(r, 'users', commandId,
           (events) => t.equal(events.length, 2, "generated two events in user list"))
       }, 150)
     })
 
-    t.test('Check if there are emailPassword entry', t => {
+    t.test('Check if there are phonePassword entry', t => {
       t.plan(1)
-      r.table("emailPassword_EmailPassword").get(email).run(conn).then(
+      r.table("phonePassword_PhonePassword").get(phone).run(conn).then(
         row => {
-          if (row) t.pass("email found " + JSON.stringify(row))
-          else t.fail("email not found " + email)
+          if (row) t.pass("phone found " + JSON.stringify(row))
+          else t.fail("phone not found " + phone)
         }
       ).catch(
         error => t.fail("error " + error)
@@ -140,9 +139,9 @@ test('User operations - Register, login, logout, reset password, change email...
       r.table("users_User").get(userId).run(conn).then(
         user => {
           t.equal(user.loginMethods.length, 1, "user has one login method")
-          t.equal(user.loginMethods[0].type, 'emailPassword', "login method type match")
-          t.equal(user.loginMethods[0].id, email, "login method id match")
-          t.equal(user.loginMethods[0].email, email, "login method extra data match")
+          t.equal(user.loginMethods[0].type, 'phonePassword', "login method type match")
+          t.equal(user.loginMethods[0].id, phone, "login method id match")
+          t.equal(user.loginMethods[0].phone, phone, "login method extra data match")
         }
       ).catch(
         error => t.fail("error " + error)
@@ -150,13 +149,13 @@ test('User operations - Register, login, logout, reset password, change email...
     })
   })
 
-  t.test('Login with email and password', t => {
+  t.test('Login with phone and password', t => {
     t.plan(3)
 
-    testUtils.runCommand(t, r, 'emailPassword', {
+    testUtils.runCommand(t, r, 'phonePassword', {
       type: 'login',
       parameters: {
-        email: email,
+        phone: phone,
         passwordHash: passwordHash,
       },
       client: {
@@ -198,11 +197,11 @@ test('User operations - Register, login, logout, reset password, change email...
 
     newPasswordHash = crypto.randomBytes(12).toString('hex')
 
-    testUtils.runCommand(t, r, 'emailPassword', {
+    testUtils.runCommand(t, r, 'phonePassword', {
       type: 'updatePasswordByUser',
       parameters: {
         user: userId,
-        email: email,
+        phone: phone,
         oldPasswordHash: passwordHash,
         newPasswordHash: newPasswordHash
       }
@@ -211,7 +210,7 @@ test('User operations - Register, login, logout, reset password, change email...
     t.test('Check if the password is changed', t => {
       t.plan(1)
       setTimeout(() => {
-        r.table("emailPassword_EmailPassword").get(email).run(conn).then(
+        r.table("phonePassword_PhonePassword").get(phone).run(conn).then(
           row => {
             t.equal(row.passwordHash, newPasswordHash, "password hash match")
           }
@@ -227,7 +226,7 @@ test('User operations - Register, login, logout, reset password, change email...
 
     let newPasswordHash2 = crypto.randomBytes(12).toString('hex')
 
-    testUtils.runCommand(t, r, 'emailPassword', {
+    testUtils.runCommand(t, r, 'phonePassword', {
       type: 'updateAllPasswordsByUser',
       parameters: {
         user: userId,
@@ -239,7 +238,7 @@ test('User operations - Register, login, logout, reset password, change email...
     t.test('Check if the password is changed', t => {
       t.plan(1)
       setTimeout(() => {
-        r.table("emailPassword_EmailPassword").get(email).run(conn).then(
+        r.table("phonePassword_PhonePassword").get(phone).run(conn).then(
           row => {
             t.equal(row.passwordHash, newPasswordHash2, "password hash match")
           }
@@ -250,47 +249,47 @@ test('User operations - Register, login, logout, reset password, change email...
     })
   })
 
-  let resetPasswordKey
+  let resetPasswordCode
 
-  t.test('generate reset password email', t => {
+  t.test('generate reset password phone', t => {
     t.plan(3)
 
-    testUtils.runCommand(t, r, 'emailPassword', {
+    testUtils.runCommand(t, r, 'phonePassword', {
       type: 'startPasswordReset',
-      parameters: { email: email }
+      parameters: { phone: phone }
     }, (cId) => { commandId = cId }).then(result => {})
 
     t.test('Check if there are events generated', t => {
       t.plan(3)
 
       setTimeout(()=>{
-        testUtils.getGeneratedEvents(r, 'emailPassword', commandId,
+        testUtils.getGeneratedEvents(r, 'phonePassword', commandId,
           (events) => {
-            t.equal(events.length, 1, "generated one event in emailPassword list")
-            if(events[0].key) {
-              resetPasswordKey = events[0].key
-              t.pass('found key in event')
-            } else t.fail('key not found')
+            t.equal(events.length, 1, "generated one event in phonePassword list")
+            if(events[0].code && events[0].phone) {
+              resetPasswordCode = events[0].code
+              t.pass('found code in event')
+            } else t.fail('code not found')
           })
       }, 350)
 
       setTimeout(()=>{
-        testUtils.getGeneratedEvents(r, 'email', commandId,
+        testUtils.getGeneratedEvents(r, 'sms', commandId,
           (events) => {
-            t.equal(events.length, 1, "generated email event in email list")
+            t.equal(events.length, 1, "generated sms event in sms list")
           }
         )
       }, 350)
     })
 
-    t.test('Check if there are resetKey', t => {
+    t.test('Check if there are reset code', t => {
       t.plan(1)
       setTimeout(() => {
-        r.table('emailPassword_EmailKey').get(resetPasswordKey).run(conn).then(
+        r.table('phonePassword_PhoneKey').get(phone + "_" + resetPasswordCode).run(conn).then(
           row => {
-            if(row && row.email == email) {
-              t.pass("reset key found")
-            } else t.fail("reset key not found")
+            if(row && row.phone == phone && row.code == resetPasswordCode) {
+              t.pass("reset code found")
+            } else t.fail("reset code not found")
           }
         )
       }, 350)
@@ -299,21 +298,22 @@ test('User operations - Register, login, logout, reset password, change email...
 
   let newPasswordHash3 = crypto.randomBytes(12).toString('hex')
 
-  t.test("Reset password using email key", t => {
+  t.test("Reset password using phone code", t => {
     t.plan(2)
 
-    testUtils.runCommand(t, r, 'emailPassword', {
+    testUtils.runCommand(t, r, 'phonePassword', {
       type: 'finishPasswordReset',
       parameters: {
         newPasswordHash: newPasswordHash3,
-        key: resetPasswordKey
+        code: resetPasswordCode,
+        phone
       }
     }, (cId) => { }).then(result => {})
 
     t.test('Check if the password is changed', t => {
       t.plan(1)
       setTimeout(() => {
-        r.table("emailPassword_EmailPassword").get(email).run(conn).then(
+        r.table("phonePassword_PhonePassword").get(phone).run(conn).then(
           row => {
             t.equal(row.passwordHash, newPasswordHash3, "password hash match")
           }
@@ -324,16 +324,16 @@ test('User operations - Register, login, logout, reset password, change email...
     })
   })
 
-  let newEmail = "testEmail_" + (Math.random() * 1000000) + "@test.com"
-  let changeEmailKey
+  let newPhone = ""+(Math.random() * 1000000).toFixed()
+  let changePhoneCode
 
-  t.test('generate change email email', t => {
+  t.test('generate change phone phone', t => {
     t.plan(3)
 
-    testUtils.runCommand(t, r, 'emailPassword', {
-      type: 'startEmailChange',
+    testUtils.runCommand(t, r, 'phonePassword', {
+      type: 'startPhoneChange',
       parameters: {
-        newEmail: newEmail,
+        newPhone: newPhone,
         passwordHash: newPasswordHash3
       },
       client: {
@@ -345,34 +345,34 @@ test('User operations - Register, login, logout, reset password, change email...
       t.plan(3)
 
       setTimeout(()=>{
-        testUtils.getGeneratedEvents(r, 'emailPassword', commandId,
+        testUtils.getGeneratedEvents(r, 'phonePassword', commandId,
           (events) => {
-            t.equal(events.length, 1, "generated one event in emailPassword list")
-            if(events[0].key) {
-              changeEmailKey = events[0].key
-              t.pass('found key in event')
-            } else t.fail('key not found')
+            t.equal(events.length, 1, "generated one event in phonePassword list")
+            if(events[0].code && events[0].phone) {
+              changePhoneCode = events[0].code
+              t.pass('found code in event')
+            } else t.fail('code not found')
           })
       }, 350)
 
       setTimeout(()=>{
-        testUtils.getGeneratedEvents(r, 'email', commandId,
+        testUtils.getGeneratedEvents(r, 'sms', commandId,
           (events) => {
-            t.equal(events.length, 1, "generated email event in email list")
+            t.equal(events.length, 1, "generated sms event in sms list")
           }
         )
       }, 350)
     })
 
-    t.test('Check if there are resetKey', t => {
+    t.test('Check if there are change code', t => {
       t.plan(3)
       setTimeout(() => {
-        r.table('emailPassword_EmailKey').get(changeEmailKey).run(conn).then(
+        r.table('phonePassword_PhoneKey').get(newPhone + "_" + changePhoneCode).run(conn).then(
           row => {
             if(row) {
               t.pass("reset key found")
-              t.equal(row.newEmail, newEmail, "newEmail match")
-              t.equal(row.oldEmail, email, "email match")
+              t.equal(row.newPhone, newPhone, "newPhone match")
+              t.equal(row.oldPhone, phone, "phone match")
             } else t.fail("reset key not found")
           }
         )
@@ -380,26 +380,27 @@ test('User operations - Register, login, logout, reset password, change email...
     })
   })
 
-  t.test("Change email using email key", t => {
+  t.test("Change phone using phone key", t => {
     t.plan(2)
 
-    testUtils.runCommand(t, r, 'emailPassword', {
-      type: 'finishEmailChange',
+    testUtils.runCommand(t, r, 'phonePassword', {
+      type: 'finishPhoneChange',
       parameters: {
-        key: changeEmailKey
+        code: changePhoneCode,
+        phone: newPhone
       }
     }, (cId) => { }).then(result => {})
 
-    t.test('Check if the email is changed to '+newEmail, t => {
+    t.test('Check if the phone is changed to '+newPhone, t => {
       t.plan(1)
       setTimeout(() => {
-        let oldEmailPromise = r.table("emailPassword_EmailPassword").get(email).run(conn)
-        let newEmailPromise = r.table("emailPassword_EmailPassword").get(newEmail).run(conn)
-        Promise.all([oldEmailPromise, newEmailPromise]).then(
-          ([oldEmailRow, newEmailRow]) => {
-            if(oldEmailRow) return t.fail("old email still exists")
-            if(!newEmailRow) return t.fail("new email not found")
-            t.pass("email changed")
+        let oldPhonePromise = r.table("phonePassword_PhonePassword").get(phone).run(conn)
+        let newPhonePromise = r.table("phonePassword_PhonePassword").get(newPhone).run(conn)
+        Promise.all([oldPhonePromise, newPhonePromise]).then(
+          ([oldPhoneRow, newPhoneRow]) => {
+            if(oldPhoneRow) return t.fail("old phone still exists")
+            if(!newPhoneRow) return t.fail("new phone not found")
+            t.pass("phone changed")
           }
         ).catch(
           error => t.fail("error " + error)
@@ -417,13 +418,13 @@ test('User operations - Register, login, logout, reset password, change email...
       parameters: { user: userId }
     }, (cId) => { }).then(result => {})
 
-    t.test('Check if emailPassword entry are removed', t => {
+    t.test('Check if phonePassword entry are removed', t => {
       t.plan(1)
       setTimeout(() => {
-        r.table("emailPassword_EmailPassword").get(newEmail).run(conn).then(
+        r.table("phonePassword_PhonePassword").get(newPhone).run(conn).then(
           row => {
-            if (!row) t.pass("email not found")
-            else t.fail("email found " + JSON.stringify(row))
+            if (!row) t.pass("phone not found")
+            else t.fail("phone found " + JSON.stringify(row))
           }
         ).catch(
           error => t.fail("error " + error)
