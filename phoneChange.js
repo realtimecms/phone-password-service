@@ -1,0 +1,98 @@
+const crypto = require('crypto')
+const rtcms = require("realtime-cms")
+const definition = require("./definition.js")
+
+const {User, PhonePassword, PhoneCode} = require("./model.js")
+
+const passwordHash = require('./passwordHash.js')
+const randomCode = require('./randomCode.js')
+
+require('../../i18n/ejs-require.js')
+const i18n = require('../../i18n')
+
+definition.action({
+  name: "startPhoneChange",
+  properties: {
+    user: { type: User, idOnly: true },
+    newPhone: { type: String },
+    passwordHash: { type: String, preFilter: passwordHash }
+  },
+  async execute({ newPhone, passwordHash }, {client, service}, emit) {
+    if(!client.user) throw new Error("notAuthorized")
+    const user = client.user
+    let oldPhonePromise = PhonePassword.run(PhonePassword.table.filter({ user }).nth(0))
+    let newPhonePromise = PhonePassword.get(newPhone)
+    let randomCodePromise = randomCode(newPhone)
+    let userPromise = User.get(user)
+    let [oldPhoneRow, newPhoneRow, code, userRow] =
+        await Promise.all([oldPhonePromise, newPhonePromise, randomCodePromise, userPromise])
+    if(!oldPhoneRow) throw service.error('notFound')
+    if(newPhoneRow) throw service.error('taken')
+    if(oldPhoneRow.user != user) throw service.error('notAuthorized')
+    if(oldPhoneRow.passwordHash != passwordHash) throw service.error('wrongPassword')
+    let oldPhone = oldPhoneRow.phone
+    emit("phonePassword", [{
+      type: 'codeGenerated',
+      action: 'phoneChange',
+      oldPhone, newPhone, user,
+      code,
+      expire: Date.now() + (24 * 60 * 60 * 1000)
+    }])
+    emit("phone", [{
+      type: "sent",
+      phone: i18n().phonePassword.changePhonePhone({oldPhone, newPhone, key: randomKey, user: userRow})
+    }])
+  }
+})
+
+definition.action({
+  name: "finishPhoneChange",
+  properties: {
+    key: { type: String }
+  },
+  async execute({ phone, code }, {client, service}, emit) {
+    const key = phone + "_" + code
+    let phoneKey = await PhoneCode.get(key)
+    if(!phoneKey) throw service.error('notFound')
+    if(phoneKey.action != 'phoneChange') throw service.error('notFound')
+    if(phoneKey.used) throw service.error('used')
+    if(phoneKey.expire < Date.now()) throw service.error('expired')
+    let oldPhonePromise = PhonePassword.get(phoneKey.oldPhone)
+    let newPhonePromise = PhonePassword.get(phoneKey.newPhone)
+    let [oldPhoneRow, newPhoneRow] = await Promise.all([oldPhonePromise, newPhonePromise])
+    if(newPhoneRow) throw service.error('taken')
+    if(!oldPhoneRow) throw service.error('notFound')
+    emit('phonePassword', [{
+      type: 'PhonePasswordCreated',
+      phonePassword: phoneKey.newPhone,
+      data: {
+        phone: phoneKey.newPhone,
+        user: phoneKey.user,
+        passwordHash: oldPhoneRow.passwordHash
+      }
+    },{
+      type: 'PhonePasswordDeleted',
+      phonePassword: phoneKey.oldPhone
+    },{
+      type: "codeUsed",
+      phone, code
+    }])
+    emit("user", [{
+      type: "loginMethodAdded",
+      user: phoneKey.user,
+      method: {
+        type: "phonePassword",
+        id: phoneKey.newPhone,
+        phone: phoneKey.newPhone
+      }
+    }, {
+      type: "loginMethodRemoved",
+      user: phoneKey.user,
+      method: {
+        type: "phonePassword",
+        id: phoneKey.oldPhone,
+        phone: phoneKey.oldPhone
+      }
+    }])
+  }
+})
