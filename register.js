@@ -14,7 +14,7 @@ const i18n = require('../../i18n')
 definition.event({
   name: "codeGenerated",
   async execute(data) {
-    PhoneKey.create({
+    PhoneCode.create({
       ...data,
       id: data.phone + "_" + data.code
     })
@@ -55,7 +55,8 @@ definition.action({
     }])
     emit("sms", [{
       type: "sent",
-      phone: i18n().phonePassword.registerPhone({ code, phone, userData })
+      phone,
+      text: i18n().phonePassword.registerSms({ code, phone, userData })
     }])
   }
 })
@@ -73,7 +74,7 @@ definition.action({
     phone: { type: String }
   },
   async execute({phone}, {service}, emit) {
-    let registerKey = await PhoneKey.run(PhoneKey.table
+    let registerKey = await PhoneCode.run(PhoneCode.table
         .filter({ action: 'register',  used: false, phone })
         .filter(r => r("expire").gt(Date.now()))
     ).then(cursor => {
@@ -83,12 +84,14 @@ definition.action({
     if(!registerKey) throw new evs.error("notFound")
     emit("phonePassword", [{ /// Generation of new code will be safer?
       type: 'codeProlonged',
-      key: registerKey.key,
+      phone,
+      code: registerKey.code,
       expire: Date.now() + (10 * 60 * 60 * 1000)
     }])
     emit("sms", [{
       type: "sent",
-      phone: i18n().phonePassword.registerPhone({ key: registerKey.key, phone, userData: registerKey.userData})
+      phone,
+      text: i18n().phonePassword.registerSms({ code: registerKey.code, phone, userData: registerKey.userData})
     }])
   }
 })
@@ -115,7 +118,7 @@ definition.action({
     if(registerKeyRow.used) throw service.error('used')
     let phoneRow = await PhonePassword.get(registerKeyRow.phone)
     if(phoneRow) throw evs.error('alreadyAdded')
-    let {user, phone, passwordHash, userData} = registerKeyRow
+    let {user, dbPhone, passwordHash, userData} = registerKeyRow
     userData.phone = phone
     emit("phonePassword", [{
       type: "codeUsed",

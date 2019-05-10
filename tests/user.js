@@ -285,7 +285,7 @@ test('User operations - Register, login, logout, reset password, change phone...
     t.test('Check if there are reset code', t => {
       t.plan(1)
       setTimeout(() => {
-        r.table('phonePassword_PhoneKey').get(phone + "_" + resetPasswordCode).run(conn).then(
+        r.table('phonePassword_PhoneCode').get(phone + "_" + resetPasswordCode).run(conn).then(
           row => {
             if(row && row.phone == phone && row.code == resetPasswordCode) {
               t.pass("reset code found")
@@ -367,7 +367,7 @@ test('User operations - Register, login, logout, reset password, change phone...
     t.test('Check if there are change code', t => {
       t.plan(3)
       setTimeout(() => {
-        r.table('phonePassword_PhoneKey').get(newPhone + "_" + changePhoneCode).run(conn).then(
+        r.table('phonePassword_PhoneCode').get(newPhone + "_" + changePhoneCode).run(conn).then(
           row => {
             if(row) {
               t.pass("reset key found")

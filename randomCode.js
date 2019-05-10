@@ -1,3 +1,5 @@
+const crypto = require('crypto')
+
 function randomCode(phone) {
   return new Promise((resolve, reject) => crypto.randomBytes(16, (err, buf) => {
     if(err) reject(err)

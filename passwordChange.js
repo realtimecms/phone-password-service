@@ -86,9 +86,10 @@ definition.action({
       phone, user: user.id, code,
       expire: Date.now() + (24 * 60 * 60 * 1000)
     }])
-    emit("phone", [{
+    emit("sms", [{
       type: "sent",
-      phone: i18n().phonePassword.resetPasswordPhone({phone, key: randomCode, user})
+      phone,
+      text: i18n().phonePassword.resetPasswordSms({phone, code, user})
     }])
   }
 })
@@ -102,7 +103,7 @@ definition.action({
   },
   async execute({ phone, code, newPasswordHash }, { service, client}, emit) {
     const key = phone+"_"+code
-    let phoneCode = await PhoneKey.get(key)
+    let phoneCode = await PhoneCode.get(key)
     if(!phoneCode) throw service.error('notFound')
     if(phoneCode.action != 'resetPassword') throw service.error('notFound')
     if(phoneCode.used) throw service.error('used')

@@ -35,12 +35,14 @@ definition.action({
       type: 'codeGenerated',
       action: 'phoneChange',
       oldPhone, newPhone, user,
+      phone: newPhone,
       code,
       expire: Date.now() + (24 * 60 * 60 * 1000)
     }])
-    emit("phone", [{
+    emit("sms", [{
       type: "sent",
-      phone: i18n().phonePassword.changePhonePhone({oldPhone, newPhone, key: randomKey, user: userRow})
+      phone: newPhone,
+      text: i18n().phonePassword.changePhoneSms({oldPhone, newPhone, code, user: userRow})
     }])
   }
 })
