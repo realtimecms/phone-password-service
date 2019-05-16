@@ -27,7 +27,13 @@ definition.action({
   properties: {
     phone: { type: String },
     passwordHash: { type: String, preFilter: passwordHash },
-    userData: { type: Object }
+    userData: {
+      type: Object,
+      properties: {
+        firstName: { type: String },
+        lastName: { type: String }
+      }
+    }
   },
   async execute({ phone, passwordHash, userData }, {service}, emit) {
     let phonePasswordPromise = PhonePassword.get(phone)
