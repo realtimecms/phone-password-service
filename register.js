@@ -119,7 +119,7 @@ definition.action({
   async execute({ phone, code }, {service, client}, emit) {
     const key = phone + "_" + code
     let registerKeyRow = await PhoneCode.get(key)
-    if(!registerKeyRow) throw service.error('notFound')
+    if(!registerKeyRow) throw { properties: { code: 'notFound' }}
     if(registerKeyRow.expire < Date.now()) throw service.error('expired')
     if(registerKeyRow.used) throw service.error('used')
     let phoneRow = await PhonePassword.get(registerKeyRow.phone)

@@ -22,8 +22,8 @@ definition.action({
     let phonePasswordPromise = PhonePassword.get(phone)
     let [registerCodeRow, phonePasswordRow] = await Promise.all([registerCodePromise, phonePasswordPromise])
     if(!phonePasswordRow && registerCodeRow) throw service.error("registrationNotConfirmed")
-    if (!phonePasswordRow) throw service.error("notFound")
-    if(phonePasswordRow.passwordHash != passwordHash) throw service.error("wrongPassword")
+    if (!phonePasswordRow) throw { properties: { phone: "notFound" }}
+    if(phonePasswordRow.passwordHash != passwordHash) throw { properties: { passwordHash: "wrongPassword" }}
     let userRow = await User.get(phonePasswordRow.user)
     if(!userRow) throw service.error("internalServerError")
     emit("session", [{

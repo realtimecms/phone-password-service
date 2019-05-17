@@ -13,7 +13,6 @@ const i18n = require('../../i18n')
 definition.action({
   name: "startPhoneChange",
   properties: {
-    user: { type: User, idOnly: true },
     newPhone: { type: String },
     passwordHash: { type: String, preFilter: passwordHash }
   },
@@ -50,10 +49,11 @@ definition.action({
 definition.action({
   name: "finishPhoneChange",
   properties: {
-    key: { type: String }
+    newPhone: { type: String },
+    code: { type: String }
   },
-  async execute({ phone, code }, {client, service}, emit) {
-    const key = phone + "_" + code
+  async execute({ newPhone, code }, {client, service}, emit) {
+    const key = newPhone + "_" + code
     let phoneKey = await PhoneCode.get(key)
     if(!phoneKey) throw service.error('notFound')
     if(phoneKey.action != 'phoneChange') throw service.error('notFound')
@@ -77,7 +77,7 @@ definition.action({
       phonePassword: phoneKey.oldPhone
     },{
       type: "codeUsed",
-      phone, code
+      phone: newPhone, code
     }])
     emit("user", [{
       type: "loginMethodAdded",
