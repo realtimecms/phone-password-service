@@ -387,7 +387,7 @@ test('User operations - Register, login, logout, reset password, change phone...
       type: 'finishPhoneChange',
       parameters: {
         code: changePhoneCode,
-        phone: newPhone
+        newPhone
       }
     }, (cId) => { }).then(result => {})
 

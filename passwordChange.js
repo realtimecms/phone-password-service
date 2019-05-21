@@ -23,15 +23,11 @@ definition.action({
     if (!row) throw service.error("notFound")
     if (row.user != user) throw service.error("notAuthorized")
     if(row.passwordHash != oldPasswordHash) throw service.error("wrongPassword")
-    const passwordHash = newPasswordHash
-
-    emit("phonePassword", [{
-      type: "PhonePasswordUpdated",
-      phonePassword: phone,
-      data: {
-        passwordHash: passwordHash
-      }
-    }])
+    service.trigger({
+      type: "OnPasswordChange",
+      user,
+      passwordHash: newPasswordHash
+    })
   }
 })
 
@@ -52,20 +48,11 @@ definition.action({
       if (row.user != user) throw service.error("notAuthorized")
       if (row.passwordHash != oldPasswordHash) throw service.error("wrongPassword")
     }
-
-    let passwordHash = newPasswordHash
-    let events = []
-    for(let row of results) {
-      let phone = row.phone
-      events.push({
-        type: "PhonePasswordUpdated",
-        phonePassword: phone,
-        data: {
-          passwordHash
-        }
-      })
-    }
-    emit("phonePassword", events)
+    service.trigger({
+      type: "OnPasswordChange",
+      user,
+      passwordHash: newPasswordHash
+    })
   }
 })
 
@@ -120,6 +107,45 @@ definition.action({
       data: {
         passwordHash
       }
+    }])
+  }
+})
+
+definition.event({
+  name: "userPasswordChanged",
+  properties: {
+    user: {
+      type: User,
+      idOnly: true
+    }
+  },
+  async execute({ user, passwordHash }) {
+    let cursor = await PhonePassword.run(PhonePassword.table.filter({user}))
+    if(!cursor) service.error("notFound")
+    let results = await cursor.toArray()
+    if(results.length == 0) throw service.error("notFound")
+    for(let row of results) {
+      PhonePassword.update(row.phone, { passwordHash })
+    }
+  }
+})
+
+definition.trigger({
+  name: "OnPasswordChange",
+  properties: {
+    user: {
+      type: User,
+      idOnly: true
+    },
+    passwordHash: {
+      type: String
+    }
+  },
+  async execute({ user, passwordHash }, context, emit) {
+    emit([{
+      type: "userPasswordChanged",
+      user,
+      passwordHash
     }])
   }
 })

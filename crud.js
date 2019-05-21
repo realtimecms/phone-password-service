@@ -102,17 +102,15 @@ definition.action({
     type: PhonePassword,
     idOnly: true
   },
-  async execute({ phonePassword, passwordHash }, context, emit) {
+  async execute({ phonePassword, passwordHash }, {client, service}, emit) {
     const phoneRow = await PhonePassword.get(phonePassword)
     if(!phoneRow) throw new Error("notFound")
-    emit([{
-      type: "PhonePasswordUpdated",
-      phonePassword,
-      data: {
-        passwordHash: passwordHash
-      }
-    }])
-    return phonePassword
+    service.trigger({
+      type: "OnPasswordChange",
+      user: phoneRow.user,
+      passwordHash: passwordHash
+    })
+    return phoneRow.id
   }
 })
 
