@@ -26,8 +26,8 @@ definition.event({
 definition.action({
   name: "startRegister",
   properties: {
-    phone: { type: String },
-    passwordHash: { type: String, preFilter: passwordHash },
+    phone: PhonePassword.properties.phone,
+    passwordHash: PhonePassword.properties.passwordHash,
     userData
   },
   async execute({ phone, passwordHash, userData }, {service}, emit) {
@@ -72,7 +72,7 @@ definition.event({
 definition.action({
   name: "resendRegisterCode",
   properties: {
-    phone: { type: String }
+    phone: PhonePassword.properties.phone
   },
   async execute({phone}, {service}, emit) {
     let registerKey = await PhoneCode.run(PhoneCode.table
@@ -107,8 +107,8 @@ definition.event({
 definition.action({
   name: "finishRegister",
   properties: {
-    code: { type: String },
-    phone: { type: String }
+    code: PhoneCode.properties.code,
+    phone: PhonePassword.properties.phone
     //sessionId: { type: String } - from clientData
   },
   async execute({ phone, code }, {service, client}, emit) {
