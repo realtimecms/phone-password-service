@@ -7,7 +7,7 @@ const i18n = require('../../i18n')
 
 const {User, PhonePassword, PhoneCode} = require("./model.js")
 
-const passwordHash = require("./passwordHash.js")
+const passwordHash = require("../config/passwordHash.js")
 const randomCode = require("./randomCode.js")
 
 definition.action({

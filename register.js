@@ -5,8 +5,9 @@ const definition = require("./definition.js")
 
 const {User, PhonePassword, PhoneCode} = require("./model.js")
 
-const passwordHash = require('./passwordHash.js')
+const passwordHash = require('../config/passwordHash.js')
 const randomCode = require('./randomCode.js')
+const userData = require('../config/userData.js')
 
 require('../../i18n/ejs-require.js')
 const i18n = require('../../i18n')
@@ -27,13 +28,7 @@ definition.action({
   properties: {
     phone: { type: String },
     passwordHash: { type: String, preFilter: passwordHash },
-    userData: {
-      type: Object,
-      properties: {
-        firstName: { type: String },
-        lastName: { type: String }
-      }
-    }
+    userData
   },
   async execute({ phone, passwordHash, userData }, {service}, emit) {
     let phonePasswordPromise = PhonePassword.get(phone)
