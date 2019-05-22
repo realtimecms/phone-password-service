@@ -5,7 +5,7 @@ const definition = require("./definition.js")
 const {User, PhonePassword, PhoneCode} = require("./model.js")
 
 const passwordHash = require('../config/passwordHash.js')
-const randomCode = require('./randomCode.js')
+const randomCode = require('../config/randomCode.js')
 
 require('../../i18n/ejs-require.js')
 const i18n = require('../../i18n')
@@ -13,8 +13,8 @@ const i18n = require('../../i18n')
 definition.action({
   name: "startPhoneChange",
   properties: {
-    newPhone: { type: String },
-    passwordHash: { type: String, preFilter: passwordHash }
+    newPhone: PhonePassword.properties.phone,
+    passwordHash: PhonePassword.properties.passwordHash
   },
   async execute({ newPhone, passwordHash }, {client, service}, emit) {
     if(!client.user) throw new Error("notAuthorized")
@@ -49,8 +49,8 @@ definition.action({
 definition.action({
   name: "finishPhoneChange",
   properties: {
-    newPhone: { type: String },
-    code: { type: String }
+    newPhone: PhonePassword.properties.phone,
+    code: PhonePassword.properties.passwordHash
   },
   async execute({ newPhone, code }, {client, service}, emit) {
     const key = newPhone + "_" + code

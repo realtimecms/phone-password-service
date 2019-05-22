@@ -6,12 +6,8 @@ const {User, PhonePassword} = require("./model.js")
 definition.action({
   name: "PhonePasswordUserCreate", // create user with phonePassword
   properties: {
-    phone: {
-      type: String
-    },
-    passwordHash: {
-      type: String
-    }
+    phone: PhonePassword.properties.phone,
+    passwordHash: PhonePassword.properties.passwordHash
   },
   returns: {
     type: PhonePassword,
@@ -47,12 +43,7 @@ definition.action({
 definition.action({
   name: "PhonePasswordCreate", // override CRUD operation
   properties: {
-    phone: {
-      type: String
-    },
-    passwordHash: {
-      type: String
-    },
+    ...PhonePassword.properties,
     user: {
       type: User,
       idOnly: true
@@ -94,9 +85,7 @@ definition.action({
       type: PhonePassword,
       idOnly: true
     },
-    passwordHash: {
-      type: String
-    }
+    passwordHash: PhonePassword.properties.passwordHash
   },
   returns: {
     type: PhonePassword,
@@ -121,9 +110,7 @@ definition.action({
       type: PhonePassword,
       idOnly: true
     },
-    passwordHash: {
-      type: String
-    }
+    passwordHash: PhonePassword.properties.passwordHash
   },
   returns: {
     type: PhonePassword,

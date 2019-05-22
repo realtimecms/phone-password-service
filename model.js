@@ -3,15 +3,20 @@ const definition = require("./definition.js")
 
 const User = definition.foreignModel("users", "User")
 
+const passwordHash = require("../config/passwordHash.js")
+
 const PhonePassword = definition.model({
   name: "PhonePassword",
   /// TODO: add queued by phone
   properties: {
     phone: {
-      type: String
+      type: String,
+      validation: ['phone']
     },
     passwordHash: {
-      type: String
+      type: String,
+      preFilter: passwordHash,
+      validation: ['safePassword']
     },
     user: {
       type: User

@@ -6,7 +6,7 @@ const definition = require("./definition.js")
 const {User, PhonePassword, PhoneCode} = require("./model.js")
 
 const passwordHash = require('../config/passwordHash.js')
-const randomCode = require('./randomCode.js')
+const randomCode = require('../config/randomCode.js')
 const userData = require('../config/userData.js')
 
 require('../../i18n/ejs-require.js')

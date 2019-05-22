@@ -8,8 +8,8 @@ const passwordHash = require("../config/passwordHash.js")
 definition.action({
   name: "login",
   properties: {
-    phone: { type: String },
-    passwordHash: { type: String, preFilter: passwordHash }
+    phone: PhonePassword.properties.phone,
+    passwordHash: PhonePassword.properties.passwordHash
   },
   async execute({ phone, passwordHash }, {service, client}, emit) {
     let registerCodePromise = PhoneCode.run(PhoneCode.table

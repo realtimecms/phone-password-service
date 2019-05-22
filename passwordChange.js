@@ -8,15 +8,15 @@ const i18n = require('../../i18n')
 const {User, PhonePassword, PhoneCode} = require("./model.js")
 
 const passwordHash = require("../config/passwordHash.js")
-const randomCode = require("./randomCode.js")
+const randomCode = require("../config/randomCode.js")
 
 definition.action({
   name: "updatePasswordByUser",
   properties: {
     user: { type: User, idOnly: true },
-    phone: { type: PhonePassword, idOnly: true },
-    oldPasswordHash: { type: String, preFilter: passwordHash },
-    newPasswordHash: { type: String, preFilter: passwordHash }
+    phone: PhonePassword.properties.phone,
+    oldPasswordHash: PhonePassword.properties.passwordHash,
+    newPasswordHash: PhonePassword.properties.passwordHash
   },
   async execute({ user, phone, oldPasswordHash, newPasswordHash }, { service, client }, emit) {
     let row = await PhonePassword.get(phone)
@@ -35,9 +35,9 @@ definition.action({
   name: "updateAllPasswordsByUser",
   properties: {
     user: { type: User, idOnly: true },
-    phone: { type: PhonePassword, idOnly: true },
-    oldPasswordHash: { type: String, preFilter: passwordHash },
-    newPasswordHash: { type: String, preFilter: passwordHash }
+    phone: PhonePassword.properties.phone,
+    oldPasswordHash: PhonePassword.properties.passwordHash,
+    newPasswordHash: PhonePassword.properties.passwordHash
   },
   async execute({ user, oldPasswordHash, newPasswordHash }, { service, client}, emit) {
     let cursor = await PhonePassword.run(PhonePassword.table.filter({user}))
@@ -59,7 +59,7 @@ definition.action({
 definition.action({
   name: "startPasswordReset",
   properties: {
-    phone: { type: PhonePassword, idOnly: true }
+    phone: PhonePassword.properties.phone
   },
   async execute({ phone }, { service, client}, emit) {
     let userPromise = PhonePassword.run(PhonePassword.table.get(phone).do(
@@ -84,9 +84,9 @@ definition.action({
 definition.action({
   name: "finishPasswordReset",
   properties: {
-    phone: { type: String },
-    code: { type: String },
-    newPasswordHash: { type: String, preFilter: passwordHash }
+    phone: PhonePassword.properties.phone,
+    code: PhoneCode.properties.code,
+    newPasswordHash: PhonePassword.properties.passwordHash
   },
   async execute({ phone, code, newPasswordHash }, { service, client}, emit) {
     const key = phone+"_"+code
