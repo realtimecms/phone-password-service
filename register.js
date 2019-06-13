@@ -146,13 +146,20 @@ definition.action({
         phone
       }
     }])
-    if(client && client.sessionId) emit("session", [{
-      type: "loggedIn",
-      user,
-      session: client.sessionId,
-      expire: null,
-      roles: []
-    }])
+    if(client && client.sessionId) {
+      emit("session", [{
+        type: "loggedIn",
+        user,
+        session: client.sessionId,
+        expire: null,
+        roles: []
+      }])
+      await service.trigger({
+        type: "OnLogin",
+        user: user,
+        session: client.sessionId
+      })
+    }
     return user
   }
 })
