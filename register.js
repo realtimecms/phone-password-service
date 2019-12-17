@@ -121,6 +121,11 @@ definition.action({
     if(phoneRow) throw evs.error('alreadyAdded')
     let {user, dbPhone, passwordHash, userData} = registerKeyRow
     userData.phone = phone
+    userData.slug = await service.triggerService('slugs', {
+      type: "CreateSlug",
+      group: "user",
+      to: user
+    })
     emit("phonePassword", [{
       type: "codeUsed",
       key
